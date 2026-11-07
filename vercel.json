@@ -6,5 +6,11 @@
     "api/**/*.ts": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/handler?__quiz_route=:path*"
+    }
+  ]
 }
