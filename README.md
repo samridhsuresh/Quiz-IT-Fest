@@ -11,6 +11,6 @@ Run `npm run lint` and `npm test` to verify the code. Use `npm run build` follow
 
 ## Hosting
 
-Vercel builds the Vite client and runs the existing Express API with PostgreSQL. Set the server-only `DATABASE_URL` in the production environment. The production build applies the committed database migrations.
+Vercel builds the Vite client and runs the existing Express API with PostgreSQL. Set the server-only `DATABASE_URL` in the production environment. The production build applies the committed database migrations. Set `NODE_OPTIONS=--experimental-require-module` on Vercel so the Firebase Admin dependency can load ES modules.
 
 For Google sign-in, authorize the live hosting domain in the existing Firebase Authentication settings. The Question Bank requires a verified Google account on the `ADMIN_EMAILS` allowlist, which defaults to the original owner account. The optional AI question generator also requires a server-only `GEMINI_API_KEY`.
