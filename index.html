@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      if (location.hostname === 'samridhsuresh.github.io' &&
+          location.pathname.toLowerCase().startsWith('/quiz-it-fest/')) {
+        location.replace('https://quiz-it-fest.vercel.app/' + location.search + location.hash);
+      }
+    </script>
     <title>Knowledge Arena — Competitive Technical & Geographic Quiz Platform</title>
     <meta name="description" content="Competitive multi-category technical and geographic knowledge gaming arena with 1,000+ fact-checked questions, interactive SVG engineering diagrams, server-authoritative scoring, achievements, and mode-separated leaderboards." />
     <meta property="og:title" content="Knowledge Arena — Competitive Technical & Geographic Quiz Platform" />

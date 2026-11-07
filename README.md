@@ -1,5 +1,7 @@
 # Knowledge Arena
 
+[Open the published quiz](https://samridhsuresh.github.io/Quiz-IT-Fest/)
+
 ## Local development
 
 1. Install Node.js 24 and run `npm ci`.
