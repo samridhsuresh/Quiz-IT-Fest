@@ -12,11 +12,25 @@ export interface AuthRequest extends Request {
   isGuest?: boolean;
 }
 
-function readHeaderString(val: string | string[] | undefined, maxLen = 80): string {
-  if (typeof val === 'string' && val.trim().length > 0) {
-    return val.trim().slice(0, maxLen);
+function readIdentityHeader(req: Request, name: string, maxLen = 80): string {
+  const raw = req.get(name) || '';
+  let value = raw;
+  if (req.get('X-Student-Identity-Encoding') === 'uri') {
+    try {
+      value = decodeURIComponent(raw);
+    } catch {
+      return '';
+    }
   }
-  return '';
+  return value.trim().slice(0, maxLen);
+}
+
+export function isQuestionBankAdmin(req: AuthRequest): boolean {
+  const email = req.user?.email?.toLowerCase();
+  const adminEmails = (process.env.ADMIN_EMAILS || 'samridhsuresh@gmail.com')
+    .split(',')
+    .map((value) => value.trim().toLowerCase());
+  return Boolean(req.user?.email_verified && email && adminEmails.includes(email));
 }
 
 export const requireAuth = async (
@@ -36,8 +50,8 @@ export const requireAuth = async (
     req.actorUid = decodedToken.uid;
     req.actorEmail = decodedToken.email || '';
     req.actorName = decodedToken.name || decodedToken.email?.split('@')[0] || 'Arena Player';
-    req.actorClass = readHeaderString(req.headers['x-student-class'], 60);
-    req.actorSchool = readHeaderString(req.headers['x-school-college'], 100);
+    req.actorClass = readIdentityHeader(req, 'x-student-class', 60);
+    req.actorSchool = readIdentityHeader(req, 'x-school-college', 100);
     req.isGuest = false;
     next();
   } catch (error) {
@@ -51,8 +65,8 @@ export const resolveActor = async (
   _res: Response,
   next: NextFunction
 ) => {
-  const studentClass = readHeaderString(req.headers['x-student-class'], 60);
-  const schoolCollege = readHeaderString(req.headers['x-school-college'], 100);
+  const studentClass = readIdentityHeader(req, 'x-student-class', 60);
+  const schoolCollege = readIdentityHeader(req, 'x-school-college', 100);
   req.actorClass = studentClass;
   req.actorSchool = schoolCollege;
 
@@ -65,7 +79,7 @@ export const resolveActor = async (
       req.actorUid = decodedToken.uid;
       req.actorEmail = decodedToken.email || '';
       req.actorName =
-        readHeaderString(req.headers['x-guest-name'], 50) ||
+        readIdentityHeader(req, 'x-guest-name', 50) ||
         decodedToken.name ||
         decodedToken.email?.split('@')[0] ||
         'Student Challenger';
@@ -77,15 +91,11 @@ export const resolveActor = async (
   }
 
   const guestUidHeader = req.headers['x-guest-uid'];
-  const guestNameHeader = req.headers['x-guest-name'];
   const rawGuestUid =
     typeof guestUidHeader === 'string' && guestUidHeader.trim().length >= 6
       ? guestUidHeader.trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
       : 'guest_default_player';
-  const rawGuestName =
-    typeof guestNameHeader === 'string' && guestNameHeader.trim().length >= 2
-      ? guestNameHeader.trim().slice(0, 50)
-      : 'Student Challenger';
+  const rawGuestName = readIdentityHeader(req, 'X-Guest-Name', 50) || 'Student Challenger';
 
   req.actorUid = rawGuestUid.startsWith('guest_') ? rawGuestUid : `guest_${rawGuestUid}`;
   req.actorEmail = '';

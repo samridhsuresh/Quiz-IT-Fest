@@ -14,7 +14,6 @@ import type { DifficultyLevel } from '../utils/quizLogic.ts';
 export interface LeaderboardEntry {
   id: number;
   attemptId: number;
-  userUid: string;
   displayName: string;
   studentClass?: string;
   schoolCollege?: string;

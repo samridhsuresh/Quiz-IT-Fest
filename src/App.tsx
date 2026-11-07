@@ -1,3 +1,4 @@
+import HERO_BG_IMG from './assets/images/arena_world_backdrop_1793995359233.jpg';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import {
@@ -34,14 +35,17 @@ import type { QuizMode } from './utils/quizLogic.ts';
 
 type ActiveTab = 'arena' | 'leaderboards' | 'achievements' | 'profile' | 'admin';
 type ArenaScreenState = 'dashboard' | 'playing' | 'results';
-
-const HERO_BG_IMG = '/src/assets/images/arena_world_backdrop_1793995359233.jpg';
+function createStudentUid(): string {
+  const randomBytes = crypto.getRandomValues(new Uint8Array(16));
+  const randomId = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `student_${randomId}`;
+}
 
 function getOrCreateGuestUid(): string {
   if (typeof window === 'undefined') return 'guest_arena_default';
   let existing = localStorage.getItem('ka_guest_uid');
   if (!existing) {
-    existing = `student_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+    existing = createStudentUid();
     localStorage.setItem('ka_guest_uid', existing);
   }
   return existing;
@@ -137,9 +141,10 @@ export default function App() {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'X-Guest-Uid': guestUid,
-        'X-Guest-Name': studentInfo?.name || guestName,
-        'X-Student-Class': studentInfo?.studentClass || '',
-        'X-School-College': studentInfo?.schoolCollege || '',
+        'X-Student-Identity-Encoding': 'uri',
+        'X-Guest-Name': encodeURIComponent(studentInfo?.name || guestName),
+        'X-Student-Class': encodeURIComponent(studentInfo?.studentClass || ''),
+        'X-School-College': encodeURIComponent(studentInfo?.schoolCollege || ''),
         ...(options.headers as Record<string, string>),
       };
 
@@ -217,9 +222,10 @@ export default function App() {
         headers: {
           'Content-Type': 'application/json',
           'X-Guest-Uid': guestUid,
-          'X-Guest-Name': data.name,
-          'X-Student-Class': data.studentClass,
-          'X-School-College': data.schoolCollege,
+          'X-Student-Identity-Encoding': 'uri',
+          'X-Guest-Name': encodeURIComponent(data.name),
+          'X-Student-Class': encodeURIComponent(data.studentClass),
+          'X-School-College': encodeURIComponent(data.schoolCollege),
           ...(idTokenRef.current ? { Authorization: `Bearer ${idTokenRef.current}` } : {}),
         },
         body: JSON.stringify({
@@ -252,7 +258,7 @@ export default function App() {
   );
 
   const handleSwitchStudent = useCallback(() => {
-    const freshUid = `student_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+    const freshUid = createStudentUid();
     if (typeof window !== 'undefined') {
       localStorage.setItem('ka_guest_uid', freshUid);
       localStorage.removeItem('ka_student_name');
@@ -595,20 +601,22 @@ export default function App() {
             >
               Student Profile
             </a>
-            <a
-              href="#admin"
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveTab('admin');
-              }}
-              className={`hover:text-[#F5F5F4] transition-colors whitespace-nowrap shrink-0 ${
-                activeTab === 'admin'
-                  ? 'text-[#F5F5F4] underline underline-offset-8 decoration-[#E34843] decoration-2'
-                  : ''
-              }`}
-            >
-              Question Bank
-            </a>
+            {overview?.isAdmin && (
+              <a
+                href="#admin"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab('admin');
+                }}
+                className={`hover:text-[#F5F5F4] transition-colors whitespace-nowrap shrink-0 ${
+                  activeTab === 'admin'
+                    ? 'text-[#F5F5F4] underline underline-offset-8 decoration-[#E34843] decoration-2'
+                    : ''
+                }`}
+              >
+                Question Bank
+              </a>
+            )}
           </nav>
 
           {/* Zone 3: 1 primary action */}
@@ -650,7 +658,7 @@ export default function App() {
           <LeaderboardsView apiFetch={apiFetch} />
         ) : activeTab === 'achievements' ? (
           <AchievementsGalleryView achievements={overview?.achievements || []} />
-        ) : activeTab === 'admin' ? (
+        ) : activeTab === 'admin' && overview?.isAdmin ? (
           <AdminConsoleView apiFetch={apiFetch} />
         ) : activeTab === 'profile' ? (
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">

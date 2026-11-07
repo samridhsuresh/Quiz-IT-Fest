@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { and, asc, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, sql, getTableColumns } from 'drizzle-orm';
 import { db } from './index.ts';
 import {
   achievements,
@@ -34,6 +34,8 @@ import {
   type QuizMode,
 } from '../utils/quizLogic.ts';
 
+const { userUid: _userUid, ...publicLeaderboardColumns } = getTableColumns(leaderboards);
+
 let seedPromise: Promise<void> | null = null;
 let isSeededMemoryFlag = false;
 
@@ -43,168 +45,171 @@ export async function ensureDatabaseSeeded(): Promise<void> {
 
   seedPromise = (async () => {
     try {
-      const existingQuestions = await db
-        .select({ id: questions.id })
-        .from(questions)
-        .limit(1000);
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`select pg_advisory_xact_lock(1196047712)`);
 
-      const [firstSeedCheck] = await db
-        .select({ questionText: questions.questionText })
-        .from(questions)
-        .where(eq(questions.code, 'comp_easy_1'))
-        .limit(1);
+        const existingQuestions = await tx
+          .select({ id: questions.id })
+          .from(questions)
+          .limit(1000);
 
-      const isQuestionBankRecalibrated =
-        firstSeedCheck?.questionText === ALL_SEED_QUESTIONS[0]?.questionText;
+        const [firstSeedCheck] = await tx
+          .select({ questionText: questions.questionText })
+          .from(questions)
+          .where(eq(questions.code, 'comp_easy_1'))
+          .limit(1);
 
-      if (existingQuestions.length >= 1000 && isQuestionBankRecalibrated) {
-        isSeededMemoryFlag = true;
-        return;
-      }
+        const isQuestionBankRecalibrated =
+          firstSeedCheck?.questionText === ALL_SEED_QUESTIONS[0]?.questionText;
 
-      // 1. Seed Categories
-      for (const cat of SEED_CATEGORIES) {
-        await db
-          .insert(categories)
-          .values({
-            slug: cat.slug,
-            name: cat.name,
-            description: cat.description,
-            icon: cat.icon,
-            accentColor: cat.accentColor,
-            questionCount: cat.questionCount,
-          })
-          .onConflictDoUpdate({
-            target: categories.slug,
-            set: {
-              name: cat.name,
-              description: cat.description,
-              questionCount: cat.questionCount,
-            },
-          });
-      }
-
-      const dbCategories = await db.select().from(categories);
-      const categoryIdMap = new Map<string, number>();
-      for (const c of dbCategories) {
-        categoryIdMap.set(c.slug, c.id);
-      }
-
-      // 2. Seed Achievements
-      for (const ach of SEED_ACHIEVEMENTS) {
-        await db
-          .insert(achievements)
-          .values({
-            code: ach.code,
-            title: ach.title,
-            description: ach.description,
-            icon: ach.icon,
-            xpReward: ach.xpReward,
-            categorySlug: ach.categorySlug,
-            conditionType: ach.conditionType,
-            conditionValue: ach.conditionValue,
-          })
-          .onConflictDoNothing({ target: achievements.code });
-      }
-
-      // 3. Seed or Sync all 1,000 Verified Calibrated Questions in Batches of 100
-      const batchSize = 100;
-      for (let i = 0; i < ALL_SEED_QUESTIONS.length; i += batchSize) {
-        const chunk = ALL_SEED_QUESTIONS.slice(i, i + batchSize);
-        const upsertedQuestions = await db
-          .insert(questions)
-          .values(
-            chunk.map((q) => ({
-              code: q.code,
-              categoryId: categoryIdMap.get(q.categorySlug) || dbCategories[0].id,
-              categorySlug: q.categorySlug,
-              difficulty: q.difficulty,
-              questionText: q.questionText,
-              explanation: q.explanation,
-              diagramType: q.diagramType,
-              diagramDataJson: JSON.stringify({ caption: q.diagramCaption || '' }),
-              tagsJson: JSON.stringify(q.tags),
-              estimatedTimeSec: q.estimatedTimeSec,
-              verificationStatus: 'verified',
-              isActive: true,
-            }))
-          )
-          .onConflictDoUpdate({
-            target: questions.code,
-            set: {
-              difficulty: sql`excluded.difficulty`,
-              questionText: sql`excluded.question_text`,
-              explanation: sql`excluded.explanation`,
-              diagramType: sql`excluded.diagram_type`,
-              diagramDataJson: sql`excluded.diagram_data_json`,
-              tagsJson: sql`excluded.tags_json`,
-              estimatedTimeSec: sql`excluded.estimated_time_sec`,
-              isActive: true,
-            },
-          })
-          .returning({
-            id: questions.id,
-            code: questions.code,
-            diagramType: questions.diagramType,
-          });
-
-        const upsertedIds = upsertedQuestions.map((u) => u.id);
-        if (upsertedIds.length > 0) {
-          await db
-            .delete(questionOptions)
-            .where(inArray(questionOptions.questionId, upsertedIds));
-          await db
-            .delete(questionImages)
-            .where(inArray(questionImages.questionId, upsertedIds));
+        if (existingQuestions.length >= 1000 && isQuestionBankRecalibrated) {
+          return;
         }
 
-        const codeToQuestion = new Map(chunk.map((q) => [q.code, q]));
-        const optionValues: Array<{
-          questionId: number;
-          optionKey: string;
-          optionText: string;
-          isCorrect: boolean;
-        }> = [];
-        const imageValues: Array<{
-          questionId: number;
-          imageUrl: string;
-          altText: string;
-          diagramSvgType: string;
-          caption: string;
-        }> = [];
-
-        for (const ins of upsertedQuestions) {
-          const src = codeToQuestion.get(ins.code);
-          if (!src) continue;
-          const keys = ['A', 'B', 'C', 'D'];
-          src.options.forEach((optText, idx) => {
-            optionValues.push({
-              questionId: ins.id,
-              optionKey: keys[idx] || 'A',
-              optionText: optText,
-              isCorrect: idx === 0, // First option in seed tuple is canonical correct answer
+        // 1. Seed Categories
+        for (const cat of SEED_CATEGORIES) {
+          await tx
+            .insert(categories)
+            .values({
+              slug: cat.slug,
+              name: cat.name,
+              description: cat.description,
+              icon: cat.icon,
+              accentColor: cat.accentColor,
+              questionCount: cat.questionCount,
+            })
+            .onConflictDoUpdate({
+              target: categories.slug,
+              set: {
+                name: cat.name,
+                description: cat.description,
+                questionCount: cat.questionCount,
+              },
             });
-          });
+        }
 
-          if (src.diagramType && src.diagramType !== 'none') {
-            imageValues.push({
-              questionId: ins.id,
-              imageUrl: `svg://${src.diagramType}`,
-              altText: `Interactive technical diagram for ${src.diagramType.replace(/_/g, ' ')}`,
-              diagramSvgType: src.diagramType,
-              caption: src.explanation.slice(0, 140),
+        const dbCategories = await tx.select().from(categories);
+        const categoryIdMap = new Map<string, number>();
+        for (const c of dbCategories) {
+          categoryIdMap.set(c.slug, c.id);
+        }
+
+        // 2. Seed Achievements
+        for (const ach of SEED_ACHIEVEMENTS) {
+          await tx
+            .insert(achievements)
+            .values({
+              code: ach.code,
+              title: ach.title,
+              description: ach.description,
+              icon: ach.icon,
+              xpReward: ach.xpReward,
+              categorySlug: ach.categorySlug,
+              conditionType: ach.conditionType,
+              conditionValue: ach.conditionValue,
+            })
+            .onConflictDoNothing({ target: achievements.code });
+        }
+
+        // 3. Seed or Sync all 1,000 Verified Calibrated Questions in Batches of 100
+        const batchSize = 100;
+        for (let i = 0; i < ALL_SEED_QUESTIONS.length; i += batchSize) {
+          const chunk = ALL_SEED_QUESTIONS.slice(i, i + batchSize);
+          const upsertedQuestions = await tx
+            .insert(questions)
+            .values(
+              chunk.map((q) => ({
+                code: q.code,
+                categoryId: categoryIdMap.get(q.categorySlug) || dbCategories[0].id,
+                categorySlug: q.categorySlug,
+                difficulty: q.difficulty,
+                questionText: q.questionText,
+                explanation: q.explanation,
+                diagramType: q.diagramType,
+                diagramDataJson: JSON.stringify({ caption: q.diagramCaption || '' }),
+                tagsJson: JSON.stringify(q.tags),
+                estimatedTimeSec: q.estimatedTimeSec,
+                verificationStatus: 'verified',
+                isActive: true,
+              }))
+            )
+            .onConflictDoUpdate({
+              target: questions.code,
+              set: {
+                difficulty: sql`excluded.difficulty`,
+                questionText: sql`excluded.question_text`,
+                explanation: sql`excluded.explanation`,
+                diagramType: sql`excluded.diagram_type`,
+                diagramDataJson: sql`excluded.diagram_data_json`,
+                tagsJson: sql`excluded.tags_json`,
+                estimatedTimeSec: sql`excluded.estimated_time_sec`,
+                isActive: true,
+              },
+            })
+            .returning({
+              id: questions.id,
+              code: questions.code,
+              diagramType: questions.diagramType,
             });
+
+          const upsertedIds = upsertedQuestions.map((u) => u.id);
+          if (upsertedIds.length > 0) {
+            await tx
+              .delete(questionOptions)
+              .where(inArray(questionOptions.questionId, upsertedIds));
+            await tx
+              .delete(questionImages)
+              .where(inArray(questionImages.questionId, upsertedIds));
+          }
+
+          const codeToQuestion = new Map(chunk.map((q) => [q.code, q]));
+          const optionValues: Array<{
+            questionId: number;
+            optionKey: string;
+            optionText: string;
+            isCorrect: boolean;
+          }> = [];
+          const imageValues: Array<{
+            questionId: number;
+            imageUrl: string;
+            altText: string;
+            diagramSvgType: string;
+            caption: string;
+          }> = [];
+
+          for (const ins of upsertedQuestions) {
+            const src = codeToQuestion.get(ins.code);
+            if (!src) continue;
+            const keys = ['A', 'B', 'C', 'D'];
+            src.options.forEach((optText, idx) => {
+              optionValues.push({
+                questionId: ins.id,
+                optionKey: keys[idx] || 'A',
+                optionText: optText,
+                isCorrect: idx === 0, // First option in seed tuple is canonical correct answer
+              });
+            });
+
+            if (src.diagramType && src.diagramType !== 'none') {
+              imageValues.push({
+                questionId: ins.id,
+                imageUrl: `svg://${src.diagramType}`,
+                altText: `Interactive technical diagram for ${src.diagramType.replace(/_/g, ' ')}`,
+                diagramSvgType: src.diagramType,
+                caption: src.explanation.slice(0, 140),
+              });
+            }
+          }
+
+          if (optionValues.length > 0) {
+            await tx.insert(questionOptions).values(optionValues);
+          }
+          if (imageValues.length > 0) {
+            await tx.insert(questionImages).values(imageValues);
           }
         }
 
-        if (optionValues.length > 0) {
-          await db.insert(questionOptions).values(optionValues);
-        }
-        if (imageValues.length > 0) {
-          await db.insert(questionImages).values(imageValues);
-        }
-      }
-
+      });
       isSeededMemoryFlag = true;
     } catch (error) {
       console.error('Database seeding failed:', error);
@@ -229,12 +234,6 @@ export async function getOrCreateProfile(
     const safeName = displayName?.trim() || 'Student Challenger';
     const safeClass = studentClass?.trim().slice(0, 60) || '';
     const safeSchool = schoolCollege?.trim().slice(0, 100) || '';
-    const isAdminUser =
-      email === 'samridhsuresh@gmail.com' ||
-      email.endsWith('@google.com') ||
-      uid.startsWith('guest_') ||
-      true;
-
     const result = await db
       .insert(profiles)
       .values({
@@ -243,7 +242,6 @@ export async function getOrCreateProfile(
         displayName: safeName,
         studentClass: safeClass,
         schoolCollege: safeSchool,
-        role: isAdminUser ? 'admin' : 'player',
       })
       .onConflictDoUpdate({
         target: profiles.uid,
@@ -436,7 +434,7 @@ export async function getDashboardOverview(
       .limit(10);
 
     const topGlobal = await db
-      .select()
+      .select(publicLeaderboardColumns)
       .from(leaderboards)
       .where(eq(leaderboards.mode, 'full_arena'))
       .orderBy(desc(leaderboards.score), desc(leaderboards.accuracyPercent), asc(leaderboards.timeSpentSec))
@@ -1232,7 +1230,7 @@ export async function queryLeaderboards(params: {
       conditions.push(gte(leaderboards.completedAt, monthAgo));
     }
 
-    const baseQuery = db.select().from(leaderboards);
+    const baseQuery = db.select(publicLeaderboardColumns).from(leaderboards);
     const filteredQuery =
       conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 

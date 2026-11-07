@@ -1,3 +1,8 @@
+import IMG_COMPUTERS from '../assets/images/card_computing_systems_1793986663781.jpg';
+import IMG_CARS from '../assets/images/cat_performance_car_1794028679181.jpg';
+import IMG_BIKES from '../assets/images/cat_sports_motorcycle_1794028679268.jpg';
+import IMG_TRAVELING from '../assets/images/cat_aircraft_travel_1794028681554.jpg';
+import IMG_PROGRAMMING from '../assets/images/cat_programming_workspace_1794028681499.jpg';
 import React, { useState, useRef } from 'react';
 import {
   Bike,
@@ -18,11 +23,6 @@ import {
 import { soundFX } from '../utils/soundEffects.ts';
 import type { DifficultyLevel } from '../utils/quizLogic.ts';
 
-const IMG_COMPUTERS = '/src/assets/images/card_computing_systems_1793986663781.jpg';
-const IMG_CARS = '/src/assets/images/cat_performance_car_1794028679181.jpg';
-const IMG_BIKES = '/src/assets/images/cat_sports_motorcycle_1794028679268.jpg';
-const IMG_TRAVELING = '/src/assets/images/cat_aircraft_travel_1794028681554.jpg';
-const IMG_PROGRAMMING = '/src/assets/images/cat_programming_workspace_1794028681499.jpg';
 
 export interface TopicNodeConfig {
   slug: 'computers' | 'cars' | 'motorcycles' | 'traveling' | 'programming';

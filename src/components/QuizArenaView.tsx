@@ -1,3 +1,4 @@
+import QUIZ_CHAMBER_BG from '../assets/images/quiz_chamber_backdrop_1793995358881.jpg';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   AlertTriangle,
@@ -24,7 +25,6 @@ import { InteractiveDiagram } from './InteractiveDiagram.tsx';
 import { soundFX } from '../utils/soundEffects.ts';
 import type { ClientSafeOption, DifficultyLevel } from '../utils/quizLogic.ts';
 
-const QUIZ_CHAMBER_BG = '/src/assets/images/quiz_chamber_backdrop_1793995358881.jpg';
 
 export interface ClientQuizQuestion {
   attemptQuestionId: number;
