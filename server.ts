@@ -377,7 +377,7 @@ Provide 1 exact correct answer and 3 plausible but unambiguously wrong distracto
 });
 
 async function startServer() {
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3000);
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

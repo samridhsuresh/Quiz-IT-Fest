@@ -1,40 +1,19 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
-var __copyProps = (to, from, except, desc2) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc2 = __getOwnPropDesc(from, key)) || desc2.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 
 // server.ts
-var import_express = __toESM(require("express"), 1);
-var import_node_path = __toESM(require("node:path"), 1);
-var import_vite = require("vite");
-var dotenv = __toESM(require("dotenv"), 1);
-var import_genai = require("@google/genai");
+import express from "express";
+import path from "node:path";
+import { createServer as createViteServer } from "vite";
+import * as dotenv from "dotenv";
+import { GoogleGenAI, Type } from "@google/genai";
 
 // src/lib/firebase-admin.ts
-var import_app = require("firebase-admin/app");
-var import_auth = require("firebase-admin/auth");
+import { initializeApp, getApps } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
 // firebase-applet-config.json
 var firebase_applet_config_default = {
@@ -50,12 +29,12 @@ var firebase_applet_config_default = {
 };
 
 // src/lib/firebase-admin.ts
-if (!(0, import_app.getApps)().length) {
-  (0, import_app.initializeApp)({
+if (!getApps().length) {
+  initializeApp({
     projectId: firebase_applet_config_default.projectId
   });
 }
-var adminAuth = (0, import_auth.getAuth)();
+var adminAuth = getAuth();
 
 // src/middleware/auth.ts
 function readHeaderString(val, maxLen = 80) {
@@ -95,12 +74,12 @@ var resolveActor = async (req, _res, next) => {
 };
 
 // src/db/repository.ts
-var import_node_crypto2 = __toESM(require("node:crypto"), 1);
-var import_drizzle_orm2 = require("drizzle-orm");
+import crypto2 from "node:crypto";
+import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 // src/db/index.ts
-var import_node_postgres = require("drizzle-orm/node-postgres");
-var import_pg = require("pg");
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
 // src/db/schema.ts
 var schema_exports = {};
@@ -125,213 +104,222 @@ __export(schema_exports, {
   userAchievements: () => userAchievements,
   userQuestionHistory: () => userQuestionHistory
 });
-var import_drizzle_orm = require("drizzle-orm");
-var import_pg_core = require("drizzle-orm/pg-core");
-var profiles = (0, import_pg_core.pgTable)("profiles", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  uid: (0, import_pg_core.text)("uid").notNull().unique(),
-  email: (0, import_pg_core.text)("email").notNull().default(""),
-  displayName: (0, import_pg_core.text)("display_name").notNull().default("Arena Challenger"),
-  studentClass: (0, import_pg_core.text)("student_class").notNull().default(""),
-  schoolCollege: (0, import_pg_core.text)("school_college").notNull().default(""),
-  avatar: (0, import_pg_core.text)("avatar").notNull().default("shield-cyan"),
-  xp: (0, import_pg_core.integer)("xp").notNull().default(0),
-  level: (0, import_pg_core.integer)("level").notNull().default(1),
-  totalCompletedChallenges: (0, import_pg_core.integer)("total_completed_challenges").notNull().default(0),
-  bestScore: (0, import_pg_core.integer)("best_score").notNull().default(0),
-  averageAccuracy: (0, import_pg_core.doublePrecision)("average_accuracy").notNull().default(0),
-  currentStreak: (0, import_pg_core.integer)("current_streak").notNull().default(0),
-  categoryMasteryJson: (0, import_pg_core.text)("category_mastery_json").notNull().default("{}"),
-  role: (0, import_pg_core.text)("role").notNull().default("player"),
-  createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow().notNull(),
-  updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow().notNull()
+import { relations } from "drizzle-orm";
+import {
+  boolean,
+  doublePrecision,
+  integer,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uniqueIndex
+} from "drizzle-orm/pg-core";
+var profiles = pgTable("profiles", {
+  id: serial("id").primaryKey(),
+  uid: text("uid").notNull().unique(),
+  email: text("email").notNull().default(""),
+  displayName: text("display_name").notNull().default("Arena Challenger"),
+  studentClass: text("student_class").notNull().default(""),
+  schoolCollege: text("school_college").notNull().default(""),
+  avatar: text("avatar").notNull().default("shield-cyan"),
+  xp: integer("xp").notNull().default(0),
+  level: integer("level").notNull().default(1),
+  totalCompletedChallenges: integer("total_completed_challenges").notNull().default(0),
+  bestScore: integer("best_score").notNull().default(0),
+  averageAccuracy: doublePrecision("average_accuracy").notNull().default(0),
+  currentStreak: integer("current_streak").notNull().default(0),
+  categoryMasteryJson: text("category_mastery_json").notNull().default("{}"),
+  role: text("role").notNull().default("player"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
-var categories = (0, import_pg_core.pgTable)("categories", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  slug: (0, import_pg_core.text)("slug").notNull().unique(),
-  name: (0, import_pg_core.text)("name").notNull(),
-  description: (0, import_pg_core.text)("description").notNull(),
-  icon: (0, import_pg_core.text)("icon").notNull(),
-  accentColor: (0, import_pg_core.text)("accent_color").notNull(),
-  questionCount: (0, import_pg_core.integer)("question_count").notNull().default(200)
+var categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(),
+  accentColor: text("accent_color").notNull(),
+  questionCount: integer("question_count").notNull().default(200)
 });
-var questions = (0, import_pg_core.pgTable)("questions", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  code: (0, import_pg_core.text)("code").notNull().unique(),
-  categoryId: (0, import_pg_core.integer)("category_id").references(() => categories.id).notNull(),
-  categorySlug: (0, import_pg_core.text)("category_slug").notNull(),
-  difficulty: (0, import_pg_core.text)("difficulty").notNull(),
+var questions = pgTable("questions", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  categoryId: integer("category_id").references(() => categories.id).notNull(),
+  categorySlug: text("category_slug").notNull(),
+  difficulty: text("difficulty").notNull(),
   // 'Easy' | 'Normal' | 'Hard' | 'Very Hard'
-  questionText: (0, import_pg_core.text)("question_text").notNull(),
-  explanation: (0, import_pg_core.text)("explanation").notNull(),
-  diagramType: (0, import_pg_core.text)("diagram_type").notNull().default("none"),
-  diagramDataJson: (0, import_pg_core.text)("diagram_data_json").notNull().default("{}"),
-  tagsJson: (0, import_pg_core.text)("tags_json").notNull().default("[]"),
-  estimatedTimeSec: (0, import_pg_core.integer)("estimated_time_sec").notNull().default(30),
-  verificationStatus: (0, import_pg_core.text)("verification_status").notNull().default("verified"),
+  questionText: text("question_text").notNull(),
+  explanation: text("explanation").notNull(),
+  diagramType: text("diagram_type").notNull().default("none"),
+  diagramDataJson: text("diagram_data_json").notNull().default("{}"),
+  tagsJson: text("tags_json").notNull().default("[]"),
+  estimatedTimeSec: integer("estimated_time_sec").notNull().default(30),
+  verificationStatus: text("verification_status").notNull().default("verified"),
   // 'verified' | 'pending_review' | 'rejected'
-  isActive: (0, import_pg_core.boolean)("is_active").notNull().default(true),
-  timesAsked: (0, import_pg_core.integer)("times_asked").notNull().default(0),
-  timesCorrect: (0, import_pg_core.integer)("times_correct").notNull().default(0),
-  createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow().notNull()
+  isActive: boolean("is_active").notNull().default(true),
+  timesAsked: integer("times_asked").notNull().default(0),
+  timesCorrect: integer("times_correct").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
-var questionOptions = (0, import_pg_core.pgTable)("question_options", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  questionId: (0, import_pg_core.integer)("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
-  optionKey: (0, import_pg_core.text)("option_key").notNull(),
+var questionOptions = pgTable("question_options", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
+  optionKey: text("option_key").notNull(),
   // 'A' | 'B' | 'C' | 'D'
-  optionText: (0, import_pg_core.text)("option_text").notNull(),
-  isCorrect: (0, import_pg_core.boolean)("is_correct").notNull().default(false)
+  optionText: text("option_text").notNull(),
+  isCorrect: boolean("is_correct").notNull().default(false)
 });
-var questionImages = (0, import_pg_core.pgTable)("question_images", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  questionId: (0, import_pg_core.integer)("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
-  imageUrl: (0, import_pg_core.text)("image_url").notNull(),
-  altText: (0, import_pg_core.text)("alt_text").notNull(),
-  diagramSvgType: (0, import_pg_core.text)("diagram_svg_type").notNull().default("none"),
-  caption: (0, import_pg_core.text)("caption").notNull().default("")
+var questionImages = pgTable("question_images", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
+  imageUrl: text("image_url").notNull(),
+  altText: text("alt_text").notNull(),
+  diagramSvgType: text("diagram_svg_type").notNull().default("none"),
+  caption: text("caption").notNull().default("")
 });
-var quizAttempts = (0, import_pg_core.pgTable)("quiz_attempts", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  attemptUuid: (0, import_pg_core.text)("attempt_uuid").notNull().unique(),
-  userUid: (0, import_pg_core.text)("user_uid").notNull(),
-  displayName: (0, import_pg_core.text)("display_name").notNull().default("Arena Challenger"),
-  studentClass: (0, import_pg_core.text)("student_class").notNull().default(""),
-  schoolCollege: (0, import_pg_core.text)("school_college").notNull().default(""),
-  mode: (0, import_pg_core.text)("mode").notNull(),
+var quizAttempts = pgTable("quiz_attempts", {
+  id: serial("id").primaryKey(),
+  attemptUuid: text("attempt_uuid").notNull().unique(),
+  userUid: text("user_uid").notNull(),
+  displayName: text("display_name").notNull().default("Arena Challenger"),
+  studentClass: text("student_class").notNull().default(""),
+  schoolCollege: text("school_college").notNull().default(""),
+  mode: text("mode").notNull(),
   // 'full_arena' | 'category' | 'quick' | 'boss_rush' | 'practice'
-  categorySlug: (0, import_pg_core.text)("category_slug").notNull().default("all"),
-  practiceDifficulty: (0, import_pg_core.text)("practice_difficulty").notNull().default("all"),
-  status: (0, import_pg_core.text)("status").notNull().default("in_progress"),
+  categorySlug: text("category_slug").notNull().default("all"),
+  practiceDifficulty: text("practice_difficulty").notNull().default("all"),
+  status: text("status").notNull().default("in_progress"),
   // 'in_progress' | 'completed' | 'abandoned'
-  currentScore: (0, import_pg_core.integer)("current_score").notNull().default(0),
-  maxPossibleScore: (0, import_pg_core.integer)("max_possible_score").notNull().default(275),
-  correctCount: (0, import_pg_core.integer)("correct_count").notNull().default(0),
-  incorrectCount: (0, import_pg_core.integer)("incorrect_count").notNull().default(0),
-  unansweredCount: (0, import_pg_core.integer)("unanswered_count").notNull().default(0),
-  accuracyPercent: (0, import_pg_core.doublePrecision)("accuracy_percent").notNull().default(0),
-  timeSpentSec: (0, import_pg_core.integer)("time_spent_sec").notNull().default(0),
-  timeLimitSec: (0, import_pg_core.integer)("time_limit_sec").notNull().default(0),
-  currentIndex: (0, import_pg_core.integer)("current_index").notNull().default(0),
-  totalQuestions: (0, import_pg_core.integer)("total_questions").notNull().default(100),
-  repeatNotice: (0, import_pg_core.boolean)("repeat_notice").notNull().default(false),
-  xpEarned: (0, import_pg_core.integer)("xp_earned").notNull().default(0),
-  startedAt: (0, import_pg_core.timestamp)("started_at").defaultNow().notNull(),
-  completedAt: (0, import_pg_core.timestamp)("completed_at")
+  currentScore: integer("current_score").notNull().default(0),
+  maxPossibleScore: integer("max_possible_score").notNull().default(275),
+  correctCount: integer("correct_count").notNull().default(0),
+  incorrectCount: integer("incorrect_count").notNull().default(0),
+  unansweredCount: integer("unanswered_count").notNull().default(0),
+  accuracyPercent: doublePrecision("accuracy_percent").notNull().default(0),
+  timeSpentSec: integer("time_spent_sec").notNull().default(0),
+  timeLimitSec: integer("time_limit_sec").notNull().default(0),
+  currentIndex: integer("current_index").notNull().default(0),
+  totalQuestions: integer("total_questions").notNull().default(100),
+  repeatNotice: boolean("repeat_notice").notNull().default(false),
+  xpEarned: integer("xp_earned").notNull().default(0),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at")
 });
-var attemptQuestions = (0, import_pg_core.pgTable)("attempt_questions", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  attemptId: (0, import_pg_core.integer)("attempt_id").references(() => quizAttempts.id, { onDelete: "cascade" }).notNull(),
-  questionId: (0, import_pg_core.integer)("question_id").references(() => questions.id).notNull(),
-  orderIndex: (0, import_pg_core.integer)("order_index").notNull(),
-  categorySlug: (0, import_pg_core.text)("category_slug").notNull(),
-  difficulty: (0, import_pg_core.text)("difficulty").notNull(),
-  pointsValue: (0, import_pg_core.integer)("points_value").notNull(),
-  shuffledOptionsJson: (0, import_pg_core.text)("shuffled_options_json").notNull(),
+var attemptQuestions = pgTable("attempt_questions", {
+  id: serial("id").primaryKey(),
+  attemptId: integer("attempt_id").references(() => quizAttempts.id, { onDelete: "cascade" }).notNull(),
+  questionId: integer("question_id").references(() => questions.id).notNull(),
+  orderIndex: integer("order_index").notNull(),
+  categorySlug: text("category_slug").notNull(),
+  difficulty: text("difficulty").notNull(),
+  pointsValue: integer("points_value").notNull(),
+  shuffledOptionsJson: text("shuffled_options_json").notNull(),
   // Array of { optionId, label, text } without isCorrect
-  isFlagged: (0, import_pg_core.boolean)("is_flagged").notNull().default(false),
-  isAnswered: (0, import_pg_core.boolean)("is_answered").notNull().default(false),
-  isCorrect: (0, import_pg_core.boolean)("is_correct").notNull().default(false),
-  pointsEarned: (0, import_pg_core.integer)("points_earned").notNull().default(0),
-  selectedOptionId: (0, import_pg_core.integer)("selected_option_id"),
-  timeSpentSec: (0, import_pg_core.integer)("time_spent_sec").notNull().default(0)
+  isFlagged: boolean("is_flagged").notNull().default(false),
+  isAnswered: boolean("is_answered").notNull().default(false),
+  isCorrect: boolean("is_correct").notNull().default(false),
+  pointsEarned: integer("points_earned").notNull().default(0),
+  selectedOptionId: integer("selected_option_id"),
+  timeSpentSec: integer("time_spent_sec").notNull().default(0)
 });
-var submittedAnswers = (0, import_pg_core.pgTable)(
+var submittedAnswers = pgTable(
   "submitted_answers",
   {
-    id: (0, import_pg_core.serial)("id").primaryKey(),
-    attemptId: (0, import_pg_core.integer)("attempt_id").references(() => quizAttempts.id, { onDelete: "cascade" }).notNull(),
-    attemptQuestionId: (0, import_pg_core.integer)("attempt_question_id").references(() => attemptQuestions.id, { onDelete: "cascade" }).notNull(),
-    questionId: (0, import_pg_core.integer)("question_id").references(() => questions.id).notNull(),
-    userUid: (0, import_pg_core.text)("user_uid").notNull(),
-    selectedOptionId: (0, import_pg_core.integer)("selected_option_id").notNull(),
-    isCorrect: (0, import_pg_core.boolean)("is_correct").notNull(),
-    pointsEarned: (0, import_pg_core.integer)("points_earned").notNull(),
-    timeSpentSec: (0, import_pg_core.integer)("time_spent_sec").notNull().default(0),
-    submittedAt: (0, import_pg_core.timestamp)("submitted_at").defaultNow().notNull()
+    id: serial("id").primaryKey(),
+    attemptId: integer("attempt_id").references(() => quizAttempts.id, { onDelete: "cascade" }).notNull(),
+    attemptQuestionId: integer("attempt_question_id").references(() => attemptQuestions.id, { onDelete: "cascade" }).notNull(),
+    questionId: integer("question_id").references(() => questions.id).notNull(),
+    userUid: text("user_uid").notNull(),
+    selectedOptionId: integer("selected_option_id").notNull(),
+    isCorrect: boolean("is_correct").notNull(),
+    pointsEarned: integer("points_earned").notNull(),
+    timeSpentSec: integer("time_spent_sec").notNull().default(0),
+    submittedAt: timestamp("submitted_at").defaultNow().notNull()
   },
   (table) => [
-    (0, import_pg_core.uniqueIndex)("submitted_answers_attempt_aq_idx").on(
+    uniqueIndex("submitted_answers_attempt_aq_idx").on(
       table.attemptId,
       table.attemptQuestionId
     )
   ]
 );
-var userQuestionHistory = (0, import_pg_core.pgTable)(
+var userQuestionHistory = pgTable(
   "user_question_history",
   {
-    id: (0, import_pg_core.serial)("id").primaryKey(),
-    userUid: (0, import_pg_core.text)("user_uid").notNull(),
-    questionId: (0, import_pg_core.integer)("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
-    attemptCount: (0, import_pg_core.integer)("attempt_count").notNull().default(1),
-    lastCorrect: (0, import_pg_core.boolean)("last_correct").notNull().default(false),
-    lastAttemptedAt: (0, import_pg_core.timestamp)("last_attempted_at").defaultNow().notNull()
+    id: serial("id").primaryKey(),
+    userUid: text("user_uid").notNull(),
+    questionId: integer("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
+    attemptCount: integer("attempt_count").notNull().default(1),
+    lastCorrect: boolean("last_correct").notNull().default(false),
+    lastAttemptedAt: timestamp("last_attempted_at").defaultNow().notNull()
   },
   (table) => [
-    (0, import_pg_core.uniqueIndex)("user_question_history_uid_qid_idx").on(
+    uniqueIndex("user_question_history_uid_qid_idx").on(
       table.userUid,
       table.questionId
     )
   ]
 );
-var achievements = (0, import_pg_core.pgTable)("achievements", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  code: (0, import_pg_core.text)("code").notNull().unique(),
-  title: (0, import_pg_core.text)("title").notNull(),
-  description: (0, import_pg_core.text)("description").notNull(),
-  icon: (0, import_pg_core.text)("icon").notNull(),
-  xpReward: (0, import_pg_core.integer)("xp_reward").notNull().default(100),
-  categorySlug: (0, import_pg_core.text)("category_slug").notNull().default("all"),
-  conditionType: (0, import_pg_core.text)("condition_type").notNull(),
-  conditionValue: (0, import_pg_core.integer)("condition_value").notNull().default(1)
+var achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(),
+  xpReward: integer("xp_reward").notNull().default(100),
+  categorySlug: text("category_slug").notNull().default("all"),
+  conditionType: text("condition_type").notNull(),
+  conditionValue: integer("condition_value").notNull().default(1)
 });
-var userAchievements = (0, import_pg_core.pgTable)(
+var userAchievements = pgTable(
   "user_achievements",
   {
-    id: (0, import_pg_core.serial)("id").primaryKey(),
-    userUid: (0, import_pg_core.text)("user_uid").notNull(),
-    achievementCode: (0, import_pg_core.text)("achievement_code").notNull(),
-    attemptId: (0, import_pg_core.integer)("attempt_id"),
-    unlockedAt: (0, import_pg_core.timestamp)("unlocked_at").defaultNow().notNull()
+    id: serial("id").primaryKey(),
+    userUid: text("user_uid").notNull(),
+    achievementCode: text("achievement_code").notNull(),
+    attemptId: integer("attempt_id"),
+    unlockedAt: timestamp("unlocked_at").defaultNow().notNull()
   },
   (table) => [
-    (0, import_pg_core.uniqueIndex)("user_achievements_uid_code_idx").on(
+    uniqueIndex("user_achievements_uid_code_idx").on(
       table.userUid,
       table.achievementCode
     )
   ]
 );
-var leaderboards = (0, import_pg_core.pgTable)("leaderboards", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  attemptId: (0, import_pg_core.integer)("attempt_id").references(() => quizAttempts.id, { onDelete: "cascade" }).notNull().unique(),
-  userUid: (0, import_pg_core.text)("user_uid").notNull(),
-  displayName: (0, import_pg_core.text)("display_name").notNull(),
-  studentClass: (0, import_pg_core.text)("student_class").notNull().default(""),
-  schoolCollege: (0, import_pg_core.text)("school_college").notNull().default(""),
-  avatar: (0, import_pg_core.text)("avatar").notNull().default("shield-cyan"),
-  mode: (0, import_pg_core.text)("mode").notNull(),
+var leaderboards = pgTable("leaderboards", {
+  id: serial("id").primaryKey(),
+  attemptId: integer("attempt_id").references(() => quizAttempts.id, { onDelete: "cascade" }).notNull().unique(),
+  userUid: text("user_uid").notNull(),
+  displayName: text("display_name").notNull(),
+  studentClass: text("student_class").notNull().default(""),
+  schoolCollege: text("school_college").notNull().default(""),
+  avatar: text("avatar").notNull().default("shield-cyan"),
+  mode: text("mode").notNull(),
   // 'full_arena' | 'category' | 'quick' | 'boss_rush'
-  categorySlug: (0, import_pg_core.text)("category_slug").notNull().default("all"),
-  score: (0, import_pg_core.integer)("score").notNull(),
-  maxScore: (0, import_pg_core.integer)("max_score").notNull(),
-  accuracyPercent: (0, import_pg_core.doublePrecision)("accuracy_percent").notNull(),
-  timeSpentSec: (0, import_pg_core.integer)("time_spent_sec").notNull(),
-  completedAt: (0, import_pg_core.timestamp)("completed_at").defaultNow().notNull()
+  categorySlug: text("category_slug").notNull().default("all"),
+  score: integer("score").notNull(),
+  maxScore: integer("max_score").notNull(),
+  accuracyPercent: doublePrecision("accuracy_percent").notNull(),
+  timeSpentSec: integer("time_spent_sec").notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull()
 });
-var questionReports = (0, import_pg_core.pgTable)("question_reports", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  questionId: (0, import_pg_core.integer)("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
-  userUid: (0, import_pg_core.text)("user_uid").notNull(),
-  reason: (0, import_pg_core.text)("reason").notNull(),
-  details: (0, import_pg_core.text)("details").notNull().default(""),
-  status: (0, import_pg_core.text)("status").notNull().default("open"),
+var questionReports = pgTable("question_reports", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").references(() => questions.id, { onDelete: "cascade" }).notNull(),
+  userUid: text("user_uid").notNull(),
+  reason: text("reason").notNull(),
+  details: text("details").notNull().default(""),
+  status: text("status").notNull().default("open"),
   // 'open' | 'resolved' | 'dismissed'
-  createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
-var categoriesRelations = (0, import_drizzle_orm.relations)(categories, ({ many }) => ({
+var categoriesRelations = relations(categories, ({ many }) => ({
   questions: many(questions)
 }));
-var questionsRelations = (0, import_drizzle_orm.relations)(questions, ({ one, many }) => ({
+var questionsRelations = relations(questions, ({ one, many }) => ({
   category: one(categories, {
     fields: [questions.categoryId],
     references: [categories.id]
@@ -339,23 +327,23 @@ var questionsRelations = (0, import_drizzle_orm.relations)(questions, ({ one, ma
   options: many(questionOptions),
   images: many(questionImages)
 }));
-var questionOptionsRelations = (0, import_drizzle_orm.relations)(questionOptions, ({ one }) => ({
+var questionOptionsRelations = relations(questionOptions, ({ one }) => ({
   question: one(questions, {
     fields: [questionOptions.questionId],
     references: [questions.id]
   })
 }));
-var questionImagesRelations = (0, import_drizzle_orm.relations)(questionImages, ({ one }) => ({
+var questionImagesRelations = relations(questionImages, ({ one }) => ({
   question: one(questions, {
     fields: [questionImages.questionId],
     references: [questions.id]
   })
 }));
-var quizAttemptsRelations = (0, import_drizzle_orm.relations)(quizAttempts, ({ many }) => ({
+var quizAttemptsRelations = relations(quizAttempts, ({ many }) => ({
   attemptQuestions: many(attemptQuestions),
   submittedAnswers: many(submittedAnswers)
 }));
-var attemptQuestionsRelations = (0, import_drizzle_orm.relations)(attemptQuestions, ({ one }) => ({
+var attemptQuestionsRelations = relations(attemptQuestions, ({ one }) => ({
   attempt: one(quizAttempts, {
     fields: [attemptQuestions.attemptId],
     references: [quizAttempts.id]
@@ -369,7 +357,7 @@ var attemptQuestionsRelations = (0, import_drizzle_orm.relations)(attemptQuestio
 // src/db/index.ts
 var createPool = () => {
   if (!global._postgresPool) {
-    global._postgresPool = new import_pg.Pool({
+    global._postgresPool = new Pool({
       host: process.env.SQL_HOST,
       user: process.env.SQL_USER,
       password: process.env.SQL_PASSWORD,
@@ -384,7 +372,7 @@ var createPool = () => {
   return global._postgresPool;
 };
 var pool = createPool();
-var db = (0, import_node_postgres.drizzle)(pool, { schema: schema_exports });
+var db = drizzle(pool, { schema: schema_exports });
 
 // src/db/banks/computersBank.ts
 var EASY_COMPUTERS = [
@@ -1587,7 +1575,7 @@ var ALL_SEED_QUESTIONS = [
 ];
 
 // src/utils/quizLogic.ts
-var import_node_crypto = __toESM(require("node:crypto"), 1);
+import crypto from "node:crypto";
 var DIFFICULTY_ORDER = ["Easy", "Normal", "Hard", "Very Hard"];
 var CATEGORY_SLUGS = [
   "computers",
@@ -1640,7 +1628,7 @@ function calculateLevelFromXp(xp) {
 function secureShuffle(items) {
   const arr = [...items];
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = import_node_crypto.default.randomInt(0, i + 1);
+    const j = crypto.randomInt(0, i + 1);
     const tmp = arr[i];
     arr[i] = arr[j];
     arr[j] = tmp;
@@ -1807,7 +1795,7 @@ async function ensureDatabaseSeeded() {
   seedPromise = (async () => {
     try {
       const existingQuestions = await db.select({ id: questions.id }).from(questions).limit(1e3);
-      const [firstSeedCheck] = await db.select({ questionText: questions.questionText }).from(questions).where((0, import_drizzle_orm2.eq)(questions.code, "comp_easy_1")).limit(1);
+      const [firstSeedCheck] = await db.select({ questionText: questions.questionText }).from(questions).where(eq(questions.code, "comp_easy_1")).limit(1);
       const isQuestionBankRecalibrated = firstSeedCheck?.questionText === ALL_SEED_QUESTIONS[0]?.questionText;
       if (existingQuestions.length >= 1e3 && isQuestionBankRecalibrated) {
         isSeededMemoryFlag = true;
@@ -1868,13 +1856,13 @@ async function ensureDatabaseSeeded() {
         ).onConflictDoUpdate({
           target: questions.code,
           set: {
-            difficulty: import_drizzle_orm2.sql`excluded.difficulty`,
-            questionText: import_drizzle_orm2.sql`excluded.question_text`,
-            explanation: import_drizzle_orm2.sql`excluded.explanation`,
-            diagramType: import_drizzle_orm2.sql`excluded.diagram_type`,
-            diagramDataJson: import_drizzle_orm2.sql`excluded.diagram_data_json`,
-            tagsJson: import_drizzle_orm2.sql`excluded.tags_json`,
-            estimatedTimeSec: import_drizzle_orm2.sql`excluded.estimated_time_sec`,
+            difficulty: sql`excluded.difficulty`,
+            questionText: sql`excluded.question_text`,
+            explanation: sql`excluded.explanation`,
+            diagramType: sql`excluded.diagram_type`,
+            diagramDataJson: sql`excluded.diagram_data_json`,
+            tagsJson: sql`excluded.tags_json`,
+            estimatedTimeSec: sql`excluded.estimated_time_sec`,
             isActive: true
           }
         }).returning({
@@ -1884,8 +1872,8 @@ async function ensureDatabaseSeeded() {
         });
         const upsertedIds = upsertedQuestions.map((u) => u.id);
         if (upsertedIds.length > 0) {
-          await db.delete(questionOptions).where((0, import_drizzle_orm2.inArray)(questionOptions.questionId, upsertedIds));
-          await db.delete(questionImages).where((0, import_drizzle_orm2.inArray)(questionImages.questionId, upsertedIds));
+          await db.delete(questionOptions).where(inArray(questionOptions.questionId, upsertedIds));
+          await db.delete(questionImages).where(inArray(questionImages.questionId, upsertedIds));
         }
         const codeToQuestion = new Map(chunk.map((q) => [q.code, q]));
         const optionValues = [];
@@ -1947,10 +1935,10 @@ async function getOrCreateProfile(uid, email, displayName, studentClass = "", sc
     }).onConflictDoUpdate({
       target: profiles.uid,
       set: {
-        email: email || import_drizzle_orm2.sql`${profiles.email}`,
-        displayName: safeName !== "Student Challenger" && safeName !== "Arena Challenger" ? safeName : import_drizzle_orm2.sql`${profiles.displayName}`,
-        studentClass: safeClass ? safeClass : import_drizzle_orm2.sql`${profiles.studentClass}`,
-        schoolCollege: safeSchool ? safeSchool : import_drizzle_orm2.sql`${profiles.schoolCollege}`,
+        email: email || sql`${profiles.email}`,
+        displayName: safeName !== "Student Challenger" && safeName !== "Arena Challenger" ? safeName : sql`${profiles.displayName}`,
+        studentClass: safeClass ? safeClass : sql`${profiles.studentClass}`,
+        schoolCollege: safeSchool ? safeSchool : sql`${profiles.schoolCollege}`,
         updatedAt: /* @__PURE__ */ new Date()
       }
     }).returning();
@@ -1969,20 +1957,20 @@ async function updateProfileIdentity(uid, displayName, avatar, studentClass = ""
     const [updated] = await db.update(profiles).set({
       displayName: cleanName,
       avatar: avatar.trim().slice(0, 32) || "shield-cyan",
-      studentClass: cleanClass || import_drizzle_orm2.sql`${profiles.studentClass}`,
-      schoolCollege: cleanSchool || import_drizzle_orm2.sql`${profiles.schoolCollege}`,
+      studentClass: cleanClass || sql`${profiles.studentClass}`,
+      schoolCollege: cleanSchool || sql`${profiles.schoolCollege}`,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm2.eq)(profiles.uid, uid)).returning();
+    }).where(eq(profiles.uid, uid)).returning();
     await db.update(quizAttempts).set({
       displayName: cleanName,
       ...cleanClass ? { studentClass: cleanClass } : {},
       ...cleanSchool ? { schoolCollege: cleanSchool } : {}
-    }).where((0, import_drizzle_orm2.eq)(quizAttempts.userUid, uid));
+    }).where(eq(quizAttempts.userUid, uid));
     await db.update(leaderboards).set({
       displayName: cleanName,
       ...cleanClass ? { studentClass: cleanClass } : {},
       ...cleanSchool ? { schoolCollege: cleanSchool } : {}
-    }).where((0, import_drizzle_orm2.eq)(leaderboards.userUid, uid));
+    }).where(eq(leaderboards.userUid, uid));
     return updated;
   } catch (error) {
     console.error("Failed to update profile identity:", error);
@@ -2000,7 +1988,7 @@ async function transferGuestToAccount(guestUid, userUid, email, displayName, stu
       schoolCollege
     );
     if (!guestUid || guestUid === userUid) return targetProfile;
-    const guestRows = await db.select().from(profiles).where((0, import_drizzle_orm2.eq)(profiles.uid, guestUid));
+    const guestRows = await db.select().from(profiles).where(eq(profiles.uid, guestUid));
     if (guestRows.length === 0) return targetProfile;
     const guest = guestRows[0];
     const finalClass = studentClass || targetProfile.studentClass || guest.studentClass || "";
@@ -2010,13 +1998,13 @@ async function transferGuestToAccount(guestUid, userUid, email, displayName, stu
       displayName: targetProfile.displayName,
       studentClass: finalClass,
       schoolCollege: finalSchool
-    }).where((0, import_drizzle_orm2.eq)(quizAttempts.userUid, guestUid));
+    }).where(eq(quizAttempts.userUid, guestUid));
     await db.update(leaderboards).set({
       userUid,
       displayName: targetProfile.displayName,
       studentClass: finalClass,
       schoolCollege: finalSchool
-    }).where((0, import_drizzle_orm2.eq)(leaderboards.userUid, guestUid));
+    }).where(eq(leaderboards.userUid, guestUid));
     const combinedXp = targetProfile.xp + guest.xp;
     const { level } = calculateLevelFromXp(combinedXp);
     const totalCompleted = targetProfile.totalCompletedChallenges + guest.totalCompletedChallenges;
@@ -2030,7 +2018,7 @@ async function transferGuestToAccount(guestUid, userUid, email, displayName, stu
       schoolCollege: finalSchool,
       currentStreak: Math.max(targetProfile.currentStreak, guest.currentStreak),
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm2.eq)(profiles.uid, userUid)).returning();
+    }).where(eq(profiles.uid, userUid)).returning();
     return merged;
   } catch (error) {
     console.error("Failed to transfer guest progress:", error);
@@ -2046,13 +2034,13 @@ async function getDashboardOverview(uid, email, displayName, studentClass = "", 
       studentClass,
       schoolCollege
     );
-    const allCategories = await db.select().from(categories).orderBy((0, import_drizzle_orm2.asc)(categories.id));
-    const allAchievements = await db.select().from(achievements).orderBy((0, import_drizzle_orm2.asc)(achievements.id));
-    const unlockedRows = await db.select().from(userAchievements).where((0, import_drizzle_orm2.eq)(userAchievements.userUid, uid));
-    const activeAttempts = await db.select().from(quizAttempts).where((0, import_drizzle_orm2.and)((0, import_drizzle_orm2.eq)(quizAttempts.userUid, uid), (0, import_drizzle_orm2.eq)(quizAttempts.status, "in_progress"))).orderBy((0, import_drizzle_orm2.desc)(quizAttempts.startedAt)).limit(1);
-    const recentAttempts = await db.select().from(quizAttempts).where((0, import_drizzle_orm2.and)((0, import_drizzle_orm2.eq)(quizAttempts.userUid, uid), (0, import_drizzle_orm2.eq)(quizAttempts.status, "completed"))).orderBy((0, import_drizzle_orm2.desc)(quizAttempts.completedAt)).limit(10);
-    const topGlobal = await db.select().from(leaderboards).where((0, import_drizzle_orm2.eq)(leaderboards.mode, "full_arena")).orderBy((0, import_drizzle_orm2.desc)(leaderboards.score), (0, import_drizzle_orm2.desc)(leaderboards.accuracyPercent), (0, import_drizzle_orm2.asc)(leaderboards.timeSpentSec)).limit(5);
-    const [{ count: totalQuestionCount }] = await db.select({ count: import_drizzle_orm2.sql`count(*)::int` }).from(questions).where((0, import_drizzle_orm2.eq)(questions.isActive, true));
+    const allCategories = await db.select().from(categories).orderBy(asc(categories.id));
+    const allAchievements = await db.select().from(achievements).orderBy(asc(achievements.id));
+    const unlockedRows = await db.select().from(userAchievements).where(eq(userAchievements.userUid, uid));
+    const activeAttempts = await db.select().from(quizAttempts).where(and(eq(quizAttempts.userUid, uid), eq(quizAttempts.status, "in_progress"))).orderBy(desc(quizAttempts.startedAt)).limit(1);
+    const recentAttempts = await db.select().from(quizAttempts).where(and(eq(quizAttempts.userUid, uid), eq(quizAttempts.status, "completed"))).orderBy(desc(quizAttempts.completedAt)).limit(10);
+    const topGlobal = await db.select().from(leaderboards).where(eq(leaderboards.mode, "full_arena")).orderBy(desc(leaderboards.score), desc(leaderboards.accuracyPercent), asc(leaderboards.timeSpentSec)).limit(5);
+    const [{ count: totalQuestionCount }] = await db.select({ count: sql`count(*)::int` }).from(questions).where(eq(questions.isActive, true));
     const levelProgress = calculateLevelFromXp(profile.xp);
     return {
       profile: {
@@ -2105,12 +2093,12 @@ async function startNewChallenge(params) {
       tagsJson: questions.tagsJson,
       estimatedTimeSec: questions.estimatedTimeSec
     }).from(questions).where(
-      (0, import_drizzle_orm2.and)(
-        (0, import_drizzle_orm2.eq)(questions.isActive, true),
-        (0, import_drizzle_orm2.eq)(questions.verificationStatus, "verified")
+      and(
+        eq(questions.isActive, true),
+        eq(questions.verificationStatus, "verified")
       )
     );
-    const historyRows = await db.select().from(userQuestionHistory).where((0, import_drizzle_orm2.eq)(userQuestionHistory.userUid, uid));
+    const historyRows = await db.select().from(userQuestionHistory).where(eq(userQuestionHistory.userUid, uid));
     const historyMap = /* @__PURE__ */ new Map();
     for (const h of historyRows) {
       historyMap.set(h.questionId, {
@@ -2134,14 +2122,14 @@ async function startNewChallenge(params) {
       throw new Error("No questions matched the selected criteria.");
     }
     const selectedIds = selected.map((q) => q.id);
-    const allOptions = await db.select().from(questionOptions).where((0, import_drizzle_orm2.inArray)(questionOptions.questionId, selectedIds));
+    const allOptions = await db.select().from(questionOptions).where(inArray(questionOptions.questionId, selectedIds));
     const optionsByQuestionId = /* @__PURE__ */ new Map();
     for (const opt of allOptions) {
       const list = optionsByQuestionId.get(opt.questionId) || [];
       list.push(opt);
       optionsByQuestionId.set(opt.questionId, list);
     }
-    const attemptUuid = import_node_crypto2.default.randomUUID();
+    const attemptUuid = crypto2.randomUUID();
     const timeLimitSec = mode === "boss_rush" ? 600 : mode === "full_arena" ? 3600 : mode === "category" ? 900 : mode === "quick" ? 450 : 0;
     const [createdAttempt] = await db.insert(quizAttempts).values({
       attemptUuid,
@@ -2191,7 +2179,7 @@ async function startNewChallenge(params) {
 }
 async function getAttemptState(uid, attemptUuid) {
   try {
-    const attempts = await db.select().from(quizAttempts).where((0, import_drizzle_orm2.eq)(quizAttempts.attemptUuid, attemptUuid));
+    const attempts = await db.select().from(quizAttempts).where(eq(quizAttempts.attemptUuid, attemptUuid));
     if (attempts.length === 0) {
       throw new Error("Challenge attempt not found.");
     }
@@ -2211,7 +2199,7 @@ async function getAttemptState(uid, attemptUuid) {
         estimatedTimeSec: questions.estimatedTimeSec,
         explanation: questions.explanation
       }
-    }).from(attemptQuestions).innerJoin(questions, (0, import_drizzle_orm2.eq)(attemptQuestions.questionId, questions.id)).where((0, import_drizzle_orm2.eq)(attemptQuestions.attemptId, attempt.id)).orderBy((0, import_drizzle_orm2.asc)(attemptQuestions.orderIndex));
+    }).from(attemptQuestions).innerJoin(questions, eq(attemptQuestions.questionId, questions.id)).where(eq(attemptQuestions.attemptId, attempt.id)).orderBy(asc(attemptQuestions.orderIndex));
     const answeredQuestionIds = aqRows.filter((r) => r.aq.isAnswered || attempt.status === "completed").map((r) => r.q.id);
     const correctOptionMap = /* @__PURE__ */ new Map();
     if (answeredQuestionIds.length > 0) {
@@ -2219,9 +2207,9 @@ async function getAttemptState(uid, attemptUuid) {
         questionId: questionOptions.questionId,
         optionId: questionOptions.id
       }).from(questionOptions).where(
-        (0, import_drizzle_orm2.and)(
-          (0, import_drizzle_orm2.inArray)(questionOptions.questionId, answeredQuestionIds),
-          (0, import_drizzle_orm2.eq)(questionOptions.isCorrect, true)
+        and(
+          inArray(questionOptions.questionId, answeredQuestionIds),
+          eq(questionOptions.isCorrect, true)
         )
       );
       for (const co of correctOpts) {
@@ -2272,7 +2260,7 @@ async function submitQuestionAnswer(params) {
       questionTimeSec,
       totalElapsedSec
     } = params;
-    const attempts = await db.select().from(quizAttempts).where((0, import_drizzle_orm2.eq)(quizAttempts.attemptUuid, attemptUuid));
+    const attempts = await db.select().from(quizAttempts).where(eq(quizAttempts.attemptUuid, attemptUuid));
     if (attempts.length === 0) throw new Error("Attempt not found.");
     const attempt = attempts[0];
     if (attempt.userUid !== uid) throw new Error("Unauthorized.");
@@ -2280,15 +2268,15 @@ async function submitQuestionAnswer(params) {
       throw new Error("This challenge has already been completed.");
     }
     const aqList = await db.select().from(attemptQuestions).where(
-      (0, import_drizzle_orm2.and)(
-        (0, import_drizzle_orm2.eq)(attemptQuestions.id, attemptQuestionId),
-        (0, import_drizzle_orm2.eq)(attemptQuestions.attemptId, attempt.id)
+      and(
+        eq(attemptQuestions.id, attemptQuestionId),
+        eq(attemptQuestions.attemptId, attempt.id)
       )
     );
     if (aqList.length === 0) throw new Error("Question not found in attempt.");
     const aq = aqList[0];
-    const [qRow] = await db.select().from(questions).where((0, import_drizzle_orm2.eq)(questions.id, aq.questionId));
-    const opts = await db.select().from(questionOptions).where((0, import_drizzle_orm2.eq)(questionOptions.questionId, aq.questionId));
+    const [qRow] = await db.select().from(questions).where(eq(questions.id, aq.questionId));
+    const opts = await db.select().from(questionOptions).where(eq(questionOptions.questionId, aq.questionId));
     const correctOption = opts.find((o) => o.isCorrect);
     if (!correctOption) throw new Error("Question configuration error.");
     if (aq.isAnswered) {
@@ -2325,7 +2313,7 @@ async function submitQuestionAnswer(params) {
       pointsEarned,
       selectedOptionId,
       timeSpentSec: Math.max(1, Math.round(questionTimeSec))
-    }).where((0, import_drizzle_orm2.eq)(attemptQuestions.id, aq.id));
+    }).where(eq(attemptQuestions.id, aq.id));
     await db.insert(userQuestionHistory).values({
       userUid: uid,
       questionId: aq.questionId,
@@ -2335,16 +2323,16 @@ async function submitQuestionAnswer(params) {
     }).onConflictDoUpdate({
       target: [userQuestionHistory.userUid, userQuestionHistory.questionId],
       set: {
-        attemptCount: import_drizzle_orm2.sql`${userQuestionHistory.attemptCount} + 1`,
+        attemptCount: sql`${userQuestionHistory.attemptCount} + 1`,
         lastCorrect: isCorrect,
         lastAttemptedAt: /* @__PURE__ */ new Date()
       }
     });
     await db.update(questions).set({
-      timesAsked: import_drizzle_orm2.sql`${questions.timesAsked} + 1`,
-      timesCorrect: isCorrect ? import_drizzle_orm2.sql`${questions.timesCorrect} + 1` : questions.timesCorrect
-    }).where((0, import_drizzle_orm2.eq)(questions.id, aq.questionId));
-    const allAq = await db.select().from(attemptQuestions).where((0, import_drizzle_orm2.eq)(attemptQuestions.attemptId, attempt.id));
+      timesAsked: sql`${questions.timesAsked} + 1`,
+      timesCorrect: isCorrect ? sql`${questions.timesCorrect} + 1` : questions.timesCorrect
+    }).where(eq(questions.id, aq.questionId));
+    const allAq = await db.select().from(attemptQuestions).where(eq(attemptQuestions.attemptId, attempt.id));
     const currentScore = allAq.reduce((s, item) => s + item.pointsEarned, 0);
     const correctCount = allAq.filter((item) => item.isAnswered && item.isCorrect).length;
     const incorrectCount = allAq.filter((item) => item.isAnswered && !item.isCorrect).length;
@@ -2360,7 +2348,7 @@ async function submitQuestionAnswer(params) {
       accuracyPercent,
       timeSpentSec: Math.max(attempt.timeSpentSec, Math.round(totalElapsedSec)),
       currentIndex: nextIndex
-    }).where((0, import_drizzle_orm2.eq)(quizAttempts.id, attempt.id));
+    }).where(eq(quizAttempts.id, attempt.id));
     return {
       alreadyAnswered: false,
       attemptQuestionId: aq.id,
@@ -2383,14 +2371,14 @@ async function submitQuestionAnswer(params) {
 async function toggleQuestionFlag(params) {
   try {
     const { uid, attemptUuid, attemptQuestionId, isFlagged } = params;
-    const [attempt] = await db.select().from(quizAttempts).where((0, import_drizzle_orm2.eq)(quizAttempts.attemptUuid, attemptUuid));
+    const [attempt] = await db.select().from(quizAttempts).where(eq(quizAttempts.attemptUuid, attemptUuid));
     if (!attempt || attempt.userUid !== uid) {
       throw new Error("Unauthorized.");
     }
     await db.update(attemptQuestions).set({ isFlagged }).where(
-      (0, import_drizzle_orm2.and)(
-        (0, import_drizzle_orm2.eq)(attemptQuestions.id, attemptQuestionId),
-        (0, import_drizzle_orm2.eq)(attemptQuestions.attemptId, attempt.id)
+      and(
+        eq(attemptQuestions.id, attemptQuestionId),
+        eq(attemptQuestions.attemptId, attempt.id)
       )
     );
     return { attemptQuestionId, isFlagged };
@@ -2402,14 +2390,14 @@ async function toggleQuestionFlag(params) {
 async function saveAttemptProgress(params) {
   try {
     const { uid, attemptUuid, currentIndex, timeSpentSec } = params;
-    const [attempt] = await db.select().from(quizAttempts).where((0, import_drizzle_orm2.eq)(quizAttempts.attemptUuid, attemptUuid));
+    const [attempt] = await db.select().from(quizAttempts).where(eq(quizAttempts.attemptUuid, attemptUuid));
     if (!attempt || attempt.userUid !== uid) {
       throw new Error("Unauthorized.");
     }
     await db.update(quizAttempts).set({
       currentIndex: Math.max(0, Math.min(attempt.totalQuestions - 1, currentIndex)),
       timeSpentSec: Math.max(attempt.timeSpentSec, Math.round(timeSpentSec))
-    }).where((0, import_drizzle_orm2.eq)(quizAttempts.id, attempt.id));
+    }).where(eq(quizAttempts.id, attempt.id));
     return { ok: true };
   } catch (error) {
     console.error("Failed to save progress:", error);
@@ -2419,11 +2407,11 @@ async function saveAttemptProgress(params) {
 async function finalizeChallengeAttempt(params) {
   try {
     const { uid, attemptUuid, timeSpentSec } = params;
-    const attempts = await db.select().from(quizAttempts).where((0, import_drizzle_orm2.eq)(quizAttempts.attemptUuid, attemptUuid));
+    const attempts = await db.select().from(quizAttempts).where(eq(quizAttempts.attemptUuid, attemptUuid));
     if (attempts.length === 0) throw new Error("Attempt not found.");
     const attempt = attempts[0];
     if (attempt.userUid !== uid) throw new Error("Unauthorized.");
-    const allAq = await db.select().from(attemptQuestions).where((0, import_drizzle_orm2.eq)(attemptQuestions.attemptId, attempt.id)).orderBy((0, import_drizzle_orm2.asc)(attemptQuestions.orderIndex));
+    const allAq = await db.select().from(attemptQuestions).where(eq(attemptQuestions.attemptId, attempt.id)).orderBy(asc(attemptQuestions.orderIndex));
     const currentScore = allAq.reduce((s, item) => s + item.pointsEarned, 0);
     const correctCount = allAq.filter((item) => item.isAnswered && item.isCorrect).length;
     const incorrectCount = allAq.filter((item) => item.isAnswered && !item.isCorrect).length;
@@ -2452,7 +2440,7 @@ async function finalizeChallengeAttempt(params) {
       veryHardTotalCount: veryHardQuestions.length,
       completedChallengesCount: profile.totalCompletedChallenges + 1
     });
-    const existingUserAch = await db.select().from(userAchievements).where((0, import_drizzle_orm2.eq)(userAchievements.userUid, uid));
+    const existingUserAch = await db.select().from(userAchievements).where(eq(userAchievements.userUid, uid));
     const existingCodes = new Set(existingUserAch.map((a) => a.achievementCode));
     const newlyUnlockedCodes = candidateAchievementCodes.filter(
       (c) => !existingCodes.has(c)
@@ -2484,7 +2472,7 @@ async function finalizeChallengeAttempt(params) {
         timeSpentSec: finalTimeSec,
         xpEarned: totalCombinedXpEarned,
         completedAt: /* @__PURE__ */ new Date()
-      }).where((0, import_drizzle_orm2.eq)(quizAttempts.id, attempt.id));
+      }).where(eq(quizAttempts.id, attempt.id));
       const newTotalCompleted = profile.totalCompletedChallenges + 1;
       const newXp = profile.xp + totalCombinedXpEarned;
       const { level: newLevel } = calculateLevelFromXp(newXp);
@@ -2515,7 +2503,7 @@ async function finalizeChallengeAttempt(params) {
         currentStreak: accuracyPercent >= 60 ? profile.currentStreak + 1 : 1,
         categoryMasteryJson: JSON.stringify(masteryMap),
         updatedAt: /* @__PURE__ */ new Date()
-      }).where((0, import_drizzle_orm2.eq)(profiles.uid, uid));
+      }).where(eq(profiles.uid, uid));
       if (attempt.mode !== "practice") {
         await db.insert(leaderboards).values({
           attemptId: attempt.id,
@@ -2585,24 +2573,24 @@ async function queryLeaderboards(params) {
     const { mode, categorySlug, timeframe } = params;
     const conditions = [];
     if (mode && mode !== "all") {
-      conditions.push((0, import_drizzle_orm2.eq)(leaderboards.mode, mode));
+      conditions.push(eq(leaderboards.mode, mode));
     }
     if (categorySlug && categorySlug !== "all") {
-      conditions.push((0, import_drizzle_orm2.eq)(leaderboards.categorySlug, categorySlug));
+      conditions.push(eq(leaderboards.categorySlug, categorySlug));
     }
     if (timeframe === "weekly") {
       const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1e3);
-      conditions.push((0, import_drizzle_orm2.gte)(leaderboards.completedAt, weekAgo));
+      conditions.push(gte(leaderboards.completedAt, weekAgo));
     } else if (timeframe === "monthly") {
       const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1e3);
-      conditions.push((0, import_drizzle_orm2.gte)(leaderboards.completedAt, monthAgo));
+      conditions.push(gte(leaderboards.completedAt, monthAgo));
     }
     const baseQuery = db.select().from(leaderboards);
-    const filteredQuery = conditions.length > 0 ? baseQuery.where((0, import_drizzle_orm2.and)(...conditions)) : baseQuery;
+    const filteredQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
     const rows = await filteredQuery.orderBy(
-      (0, import_drizzle_orm2.desc)(leaderboards.score),
-      (0, import_drizzle_orm2.desc)(leaderboards.accuracyPercent),
-      (0, import_drizzle_orm2.asc)(leaderboards.timeSpentSec)
+      desc(leaderboards.score),
+      desc(leaderboards.accuracyPercent),
+      asc(leaderboards.timeSpentSec)
     ).limit(50);
     return rows;
   } catch (error) {
@@ -2615,26 +2603,26 @@ async function listAdminQuestions(params) {
     await ensureDatabaseSeeded();
     const conditions = [];
     if (params.categorySlug && params.categorySlug !== "all") {
-      conditions.push((0, import_drizzle_orm2.eq)(questions.categorySlug, params.categorySlug));
+      conditions.push(eq(questions.categorySlug, params.categorySlug));
     }
     if (params.difficulty && params.difficulty !== "all") {
-      conditions.push((0, import_drizzle_orm2.eq)(questions.difficulty, params.difficulty));
+      conditions.push(eq(questions.difficulty, params.difficulty));
     }
     if (params.verificationStatus && params.verificationStatus !== "all") {
-      conditions.push((0, import_drizzle_orm2.eq)(questions.verificationStatus, params.verificationStatus));
+      conditions.push(eq(questions.verificationStatus, params.verificationStatus));
     }
-    const qRows = await db.select().from(questions).where(conditions.length > 0 ? (0, import_drizzle_orm2.and)(...conditions) : void 0).orderBy((0, import_drizzle_orm2.desc)(questions.id)).limit(params.limit || 60);
+    const qRows = await db.select().from(questions).where(conditions.length > 0 ? and(...conditions) : void 0).orderBy(desc(questions.id)).limit(params.limit || 60);
     const filtered = params.search ? qRows.filter(
       (q) => q.questionText.toLowerCase().includes(params.search.toLowerCase()) || q.code.toLowerCase().includes(params.search.toLowerCase())
     ) : qRows;
     const qIds = filtered.map((q) => q.id);
-    const opts = qIds.length > 0 ? await db.select().from(questionOptions).where((0, import_drizzle_orm2.inArray)(questionOptions.questionId, qIds)) : [];
-    const [{ totalCount }] = await db.select({ totalCount: import_drizzle_orm2.sql`count(*)::int` }).from(questions);
+    const opts = qIds.length > 0 ? await db.select().from(questionOptions).where(inArray(questionOptions.questionId, qIds)) : [];
+    const [{ totalCount }] = await db.select({ totalCount: sql`count(*)::int` }).from(questions);
     const reports = await db.select({
       report: questionReports,
       questionText: questions.questionText,
       questionCode: questions.code
-    }).from(questionReports).innerJoin(questions, (0, import_drizzle_orm2.eq)(questionReports.questionId, questions.id)).orderBy((0, import_drizzle_orm2.desc)(questionReports.createdAt)).limit(30);
+    }).from(questionReports).innerJoin(questions, eq(questionReports.questionId, questions.id)).orderBy(desc(questionReports.createdAt)).limit(30);
     return {
       totalDatabaseQuestions: totalCount,
       questions: filtered.map((q) => ({
@@ -2659,7 +2647,7 @@ async function createAdminQuestion(params) {
     if (uniqueOpts.size < 4) {
       throw new Error("All four answer options must be distinct and non-empty.");
     }
-    const [cat] = await db.select().from(categories).where((0, import_drizzle_orm2.eq)(categories.slug, params.categorySlug));
+    const [cat] = await db.select().from(categories).where(eq(categories.slug, params.categorySlug));
     if (!cat) throw new Error("Invalid category.");
     const code = `custom_${params.categorySlug}_${Date.now()}_${Math.floor(Math.random() * 1e3)}`;
     const [created] = await db.insert(questions).values({
@@ -2695,7 +2683,7 @@ async function updateAdminQuestionStatus(params) {
     const [updated] = await db.update(questions).set({
       verificationStatus: params.verificationStatus,
       isActive: params.isActive
-    }).where((0, import_drizzle_orm2.eq)(questions.id, params.questionId)).returning();
+    }).where(eq(questions.id, params.questionId)).returning();
     return updated;
   } catch (error) {
     console.error("Failed to update question status:", error);
@@ -2720,8 +2708,8 @@ async function submitQuestionReport(params) {
 
 // server.ts
 dotenv.config();
-var app = (0, import_express.default)();
-app.use(import_express.default.json({ limit: "1mb" }));
+var app = express();
+app.use(express.json({ limit: "1mb" }));
 var rateWindowMap = /* @__PURE__ */ new Map();
 app.use("/api", (req, res, next) => {
   const key = req.ip || "local";
@@ -2979,7 +2967,7 @@ app.post("/api/admin/generate-ai-questions", resolveActor, async (req, res) => {
         error: "GEMINI_API_KEY is not configured in Settings > Secrets."
       });
     }
-    const ai = new import_genai.GoogleGenAI({
+    const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
         headers: {
@@ -2996,16 +2984,16 @@ Provide 1 exact correct answer and 3 plausible but unambiguously wrong distracto
         systemInstruction: "You are a technical subject-matter expert creating fact-checked engineering, computing, automotive, motorcycle, geography, and programming questions. Return valid JSON matching the schema.",
         responseMimeType: "application/json",
         responseSchema: {
-          type: import_genai.Type.ARRAY,
+          type: Type.ARRAY,
           items: {
-            type: import_genai.Type.OBJECT,
+            type: Type.OBJECT,
             properties: {
-              questionText: { type: import_genai.Type.STRING },
-              correctOption: { type: import_genai.Type.STRING },
-              wrongOption1: { type: import_genai.Type.STRING },
-              wrongOption2: { type: import_genai.Type.STRING },
-              wrongOption3: { type: import_genai.Type.STRING },
-              explanation: { type: import_genai.Type.STRING }
+              questionText: { type: Type.STRING },
+              correctOption: { type: Type.STRING },
+              wrongOption1: { type: Type.STRING },
+              wrongOption2: { type: Type.STRING },
+              wrongOption3: { type: Type.STRING },
+              explanation: { type: Type.STRING }
             },
             required: [
               "questionText",
@@ -3049,18 +3037,18 @@ Provide 1 exact correct answer and 3 plausible but unambiguously wrong distracto
   }
 });
 async function startServer() {
-  const PORT = 3e3;
+  const PORT = Number(process.env.PORT || 3e3);
   if (process.env.NODE_ENV !== "production") {
-    const vite = await (0, import_vite.createServer)({
+    const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa"
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = import_node_path.default.join(process.cwd(), "dist");
-    app.use(import_express.default.static(distPath));
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
     app.get("*", (_req, res) => {
-      res.sendFile(import_node_path.default.join(distPath, "index.html"));
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
   app.listen(PORT, "0.0.0.0", () => {
